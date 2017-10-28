@@ -5,7 +5,7 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 
-from PyQt5.QtWidgets import QApplication, QMainWindow, QMenu, QVBoxLayout, QSizePolicy, QMessageBox, QWidget, QPushButton, QComboBox
+from PyQt5.QtWidgets import QApplication, QMainWindow, QMenu, QVBoxLayout, QSizePolicy, QMessageBox, QWidget, QPushButton, QComboBox, QDesktopWidget
 from PyQt5.QtGui import QIcon
 
 import mysql.connector, pandas
@@ -13,6 +13,7 @@ import mysql.connector, pandas
 class PlotCanvas(FigureCanvas):
     #Define propriedades do canvas matplotlib, atualiza o gráfico, etc
     def __init__(self, parent=None, width=5, height=4, dpi=100):
+
         self.fig = Figure(figsize=(width, height), dpi=dpi)
         self.axes = self.fig.add_subplot(111)
 
@@ -28,7 +29,6 @@ class PlotCanvas(FigureCanvas):
 
     def PlotInicial(self):
         data = [random.random() for i in range(25)]
-        #self.axes = self.figure.add_subplot(111)
         self.axes.plot(data, 'r-')
         self.axes.set_title('Titulo')
         self.axes.set_ylabel('Eixo Y')
@@ -49,53 +49,60 @@ class App(QMainWindow):
         #Define propriedades da janela
         super().__init__()
         self.setWindowIcon(QIcon('imgs/logo_tu.png'))
-        self.left = 50
-        self.top = 50
+        #self.left = 50
+        #self.top = 50
         self.title = 'PyQt5 matplotlib example - pythonspot.com'
-        self.width = 640
-        self.height = 400
+        #self.width = 640
+        #self.height = 400
         self.initUI()
 
     def initUI(self):
         #Define estrutura da janela, botoes, etc
         self.setWindowTitle(self.title)
-        self.setGeometry(self.left, self.top, self.width, self.height)
+        #self.setGeometry(self.left, self.top, self.width, self.height)
+
+        screen = QDesktopWidget().screenGeometry()
+        self.width = screen.width()
+        self.height = screen.height()
+        self.setGeometry(self.width*0.1, self.height*0.1, self.width*0.7, self.height*0.7)
 
         #Cria a janela onde vai ser plotado
-        self.canvas = PlotCanvas(self, width=5, height=4)
-        #self.canvas.move(0,0)
+        self.canvas = PlotCanvas(self, width=6.5, height=4.5)
+        self.canvas.move(self.width*0.1,self.height*0.03)
 
         #Cria botão e conecta a função LoadButtonClicked quando clicado
         self.LoadButton = QPushButton('Coletar Dados', self)
         self.LoadButton.clicked.connect(self.LoadButtonClicked)
         self.LoadButton.setToolTip('Coleta do banco de dados')
-        self.LoadButton.move(500,0)
-        self.LoadButton.resize(80,20)
+        self.LoadButton.move(self.width*0.65-80,0)
+        self.LoadButton.resize(self.width*0.1,self.height*0.05)
 
         #Cria botões x
         EixoX = QPushButton('Eixo X', self)
         EixoX.clicked.connect(self.DefineEixo)
         EixoX.setObjectName('X')
         EixoX.setToolTip('Definir como eixo X')
-        EixoX.move(300,200)
-        EixoX.resize(80,20)
+        EixoX.move(self.width*0.4/2,self.height*0.62)
+        EixoX.resize(self.width*0.3,self.height*0.05)
 
         #Cria botões y
         EixoY = QPushButton('Eixo Y', self)
         EixoY.clicked.connect(self.DefineEixo)
         EixoY.setObjectName('Y')
         EixoY.setToolTip('Definir como eixo Y')
-        EixoY.move(0,200)
-        EixoY.resize(80,20)
+        EixoY.move(self.width*0.02,self.height*0.4/2)
+        EixoY.resize(self.width*0.03,self.height*0.6/2)
 
         #Cria o menu dropdown
         self.ListaDataBase = QComboBox(self)
         self.ListaDataBase.hide()
-        self.ListaDataBase.move(500,40)
-        self.ListaDataBase.resize(80,20)
+        self.ListaDataBase.move(self.width*0.65-80,60)
+        self.ListaDataBase.resize(self.width*0.1,self.height*0.05)
         self.show()
 
         self.PendenteParaPlot = None
+
+
 
     def LoadButtonClicked(self):
         sender = self.sender()
@@ -121,13 +128,13 @@ class App(QMainWindow):
         self.ListaDeBotoes = []
         PoePraBaixo = 0
         for Coluna in range(0,len(self.ColunasAtivas)):
-            PoePraBaixo = PoePraBaixo + 20
+            PoePraBaixo = PoePraBaixo + 40
             self.ListaDeBotoes.append(QPushButton(self.ColunasAtivas[Coluna], self))
             self.ListaDeBotoes[Coluna].clicked.connect(self.ColunaSelecionada)
             self.ListaDeBotoes[Coluna].setObjectName(self.ColunasAtivas[Coluna])
             self.ListaDeBotoes[Coluna].setToolTip('Coluna %s do conjunto %s' % (self.ColunasAtivas[Coluna], self.DataFrameSelecionado))
-            self.ListaDeBotoes[Coluna].move(500,40+PoePraBaixo)
-            self.ListaDeBotoes[Coluna].resize(80,20)
+            self.ListaDeBotoes[Coluna].move(self.width*0.65-80,60+PoePraBaixo)
+            self.ListaDeBotoes[Coluna].resize(self.width*0.1,self.height*0.05)
             self.ListaDeBotoes[Coluna].show()
         self.FlagParaPlotar = 0
         #self.UpdatePlot(self, self.DataFrameAtivo[0], self.DataFrameAtivo[1])
