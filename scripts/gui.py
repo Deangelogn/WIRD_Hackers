@@ -5,14 +5,17 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 
-from PyQt5.QtWidgets import QApplication, QMainWindow, QMenu, QVBoxLayout, QSizePolicy, QMessageBox, QWidget, QPushButton
+from PyQt5.QtWidgets import QApplication, QMainWindow, QMenu, QVBoxLayout, QSizePolicy, QMessageBox, QWidget, QPushButton, QComboBox
 from PyQt5.QtGui import QIcon
+
+import mysql.connector, pandas
 
 class App(QMainWindow):
 
     def __init__(self):
         #Define propriedades da janela
         super().__init__()
+        self.setWindowIcon(QIcon('imgs/logo_tu.png'))
         self.left = 50
         self.top = 50
         self.title = 'PyQt5 matplotlib example - pythonspot.com'
@@ -25,15 +28,43 @@ class App(QMainWindow):
         self.setWindowTitle(self.title)
         self.setGeometry(self.left, self.top, self.width, self.height)
 
+        #Cria a janela onde vai ser plotado
         m = PlotCanvas(self, width=5, height=4)
         m.move(0,0)
 
-        button = QPushButton('PyQt5 button', self)
-        button.setToolTip('This s an example button')
-        button.move(500,0)
-        button.resize(140,100)
+        #Cria botão e conecta a função LoadButtonClicked quando clicado
+        LoadButton = QPushButton('PyQt5 button', self)
+        LoadButton.clicked.connect(self.LoadButtonClicked)
+        LoadButton.setToolTip('This s an example button')
+        LoadButton.move(500,0)
+        LoadButton.resize(140,100)
 
+        #Cria o menu dropdown
+        self.ListaDataBase = QComboBox(self)
+        self.ListaDataBase.hide()
+        self.ListaDataBase.move(500,100)
+        self.ListaDataBase.resize(140,100)
         self.show()
+
+    
+    def LoadButtonClicked(self):
+        sender = self.sender()
+        self.ListaDataBase.show()
+        print('teste')
+        self.AdicionaItensLista()
+
+    def AdicionaItensLista(self):
+        #Preenche a lista de itens
+        for s in range(0,10):
+            self.ListaDataBase.addItem("teste %d" % s)
+        self.ListaDataBase.addItem("teste")
+        #Quando cada item da lista for selecionado, manda a string para a função DataFrameSelecionado
+        self.ListaDataBase.activated[str].connect(self.DataFrameSelecionado)
+
+
+    def DataFrameSelecionado(self, text):
+        print(QComboBox.findText(self.ListaDataBase,text))
+
 
 
 class PlotCanvas(FigureCanvas):
@@ -56,8 +87,11 @@ class PlotCanvas(FigureCanvas):
         data = [random.random() for i in range(25)]
         ax = self.figure.add_subplot(111)
         ax.plot(data, 'r-')
-        ax.set_title('PyQt Matplotlib Example')
+        ax.set_title('Aqui mora um título feliz')
+        ax.set_ylabel('Eixo Y')
+        ax.set_xlabel('Eixo X')
         self.draw()
+
 
 if __name__ == '__main__':
     #Inicia a aplicação (janela), executa e sai
