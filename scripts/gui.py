@@ -33,9 +33,9 @@ class App(QMainWindow):
         m.move(0,0)
 
         #Cria botão e conecta a função LoadButtonClicked quando clicado
-        LoadButton = QPushButton('PyQt5 button', self)
+        LoadButton = QPushButton('Coletar Dados', self)
         LoadButton.clicked.connect(self.LoadButtonClicked)
-        LoadButton.setToolTip('This s an example button')
+        LoadButton.setToolTip('Coleta do banco de dados')
         LoadButton.move(500,0)
         LoadButton.resize(140,100)
 
@@ -46,24 +46,39 @@ class App(QMainWindow):
         self.ListaDataBase.resize(140,100)
         self.show()
 
-    
+
     def LoadButtonClicked(self):
         sender = self.sender()
         self.ListaDataBase.show()
-        print('teste')
+        self.Conexao = mysql.connector.connect(host='143.106.73.88', database='hackthecampus', user='htc', password='htc_123456')
+        self.DataBases = ["htc_alunos_doutorado_naturalidade", "htc_alunos_especiais_inter_posgrad_naturalidade", "htc_alunos_especiais_inter_grad_naturalidade", "htc_alunos_graduacao_naturalidade", "htc_alunos_mestrado_naturalidade", "htc_concluintes", "htc_cv_cr", "htc_fapesp", "htc_folha_unicamp", "htc_lotacao_unicamp", "htc_origem_alunos", "htc_sexo_alunos", "htc_siafem_despesas"]
         self.AdicionaItensLista()
 
     def AdicionaItensLista(self):
         #Preenche a lista de itens
-        for s in range(0,10):
-            self.ListaDataBase.addItem("teste %d" % s)
-        self.ListaDataBase.addItem("teste")
+        for NomeDaBase in self.DataBases:
+            self.ListaDataBase.addItem(NomeDaBase)
         #Quando cada item da lista for selecionado, manda a string para a função DataFrameSelecionado
         self.ListaDataBase.activated[str].connect(self.DataFrameSelecionado)
 
 
     def DataFrameSelecionado(self, text):
-        print(QComboBox.findText(self.ListaDataBase,text))
+        #Prepara a query
+        s = "SELECT * FROM "
+        #Puxa o data frame
+        self.DataFrameAtivo = pandas.read_sql(s + text, con=self.Conexao)
+        self.ColunasAtivas = self.DataFrameAtivo.columns.values
+        self.ListaDeBotoes = []
+        PoePraBaixo = 0
+        for Coluna in range(0,len(self.ColunasAtivas)):
+            PoePraBaixo = PoePraBaixo + 20
+            self.ListaDeBotoes.append(QPushButton(self.ColunasAtivas[Coluna], self))
+            self.ListaDeBotoes[Coluna].clicked.connect(self.LoadButtonClicked)
+            self.ListaDeBotoes[Coluna].setToolTip('Coluna %s do conjunto %s' % (self.ColunasAtivas[Coluna], self.DataFrameSelecionado))
+            self.ListaDeBotoes[Coluna].move(500,180+PoePraBaixo)
+            self.ListaDeBotoes[Coluna].resize(80,20)
+            self.ListaDeBotoes[Coluna].show()
+
 
 
 
@@ -87,7 +102,7 @@ class PlotCanvas(FigureCanvas):
         data = [random.random() for i in range(25)]
         ax = self.figure.add_subplot(111)
         ax.plot(data, 'r-')
-        ax.set_title('Aqui mora um título feliz')
+        ax.set_title('Titulo')
         ax.set_ylabel('Eixo Y')
         ax.set_xlabel('Eixo X')
         self.draw()
