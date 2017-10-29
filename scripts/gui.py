@@ -71,8 +71,6 @@ class PlotCanvas(FigureCanvas):
         self.axes.set_ylabel(Y)
         self.axes.set_xlabel(X)
         self.draw()       
-
-        
         
 class App(QMainWindow):
 
@@ -84,7 +82,7 @@ class App(QMainWindow):
         self.title = 'WIRD'
         self.initUI()
         print('1')
-        
+
     def initUI(self):
         #Define estrutura da janela, botoes, etc
         self.setWindowTitle(self.title)
@@ -110,10 +108,11 @@ class App(QMainWindow):
         self.groupList = QComboBox(self)
         self.groupList.move(self.width*0.59,self.height*0.48)
         self.groupList.resize(self.width*0.1,self.height*0.05)
-        
+
         self.target = QComboBox(self)
         self.target.move(self.width*0.59,self.height*0.56)
         self.target.resize(self.width*0.1,self.height*0.05)
+
         
         self.ListaDataBase = QComboBox(self)
         self.ListaDataBase.hide()
@@ -127,12 +126,12 @@ class App(QMainWindow):
         self.plotOptions.addItem("Pie")
         self.plotOptions.addItem("Line")
         
-        
         self.AdicionaItensLista()
-        
+
         self.show()
 
         self.PendenteParaPlot = None
+
 
     def plot(self):
         xLabel = self.groupList.currentText()
@@ -147,7 +146,7 @@ class App(QMainWindow):
             self.canvas.pieChart(self.out, xLabel, yLabel, xLabel + ' vs ' + yLabel)
         elif self.chartType == "Line":
             self.canvas.lineChart(self.out, xLabel, yLabel, xLabel + ' vs ' + yLabel)
-        
+
     def getDataBase(self):
         conn = mysql.connector.connect(host='143.106.73.88', database='information_schema', user='htc', password='htc_123456')
         self.tables=pd.read_sql("SELECT * FROM tables where TABLE_TYPE='BASE TABLE'", con=conn)
@@ -160,7 +159,7 @@ class App(QMainWindow):
                 count += 1
             else:
                 break
-            
+
         self.df = []
         for l in self.DataBases:
             print(l)
@@ -176,46 +175,27 @@ class App(QMainWindow):
         #Quando cada item da lista for selecionado, manda a string para a função DataFrameSelecionado
         self.ListaDataBase.activated[str].connect(self.DataFrameSelecionado)
         self.ListaDataBase.show()
-        
+
     def loadGroupComboBox(self):
         for cn in self.ColunasAtivas:
             self.groupList.addItem(cn)
-            
+
     def loadTargetComboBox(self):
         for cn in self.ColunasAtivas:
-            self.target.addItem(cn)        
+            self.target.addItem(cn)
 
     def checkComboBox(self):
             if self.groupList.currentText() == self.target.currentText():
-                self.target.setCurrentIndex(self.groupList.getCurrentIndex()+1)
-                
-            
+                self.target.setCurrentText(self.target.itemText(self.groupList.currentIndex()+1))
+
     def DataFrameSelecionado(self, text):
         self.currentIndex = self.DataBases.index(text)
         self.DataFrameAtivo = self.df[self.currentIndex]
         self.ColunasAtivas = self.DataFrameAtivo.columns.values
         self.loadGroupComboBox()
         self.loadTargetComboBox()
-        #self.checkComboBox()
-        #self.ListaDeBotoes = []
-        #PoePraBaixo = 0
-        
-        
-        #for Coluna in range(0,len(self.ColunasAtivas)):
-        #    PoePraBaixo = PoePraBaixo + 40
-        #    self.ListaDeBotoes.append(QPushButton(self.ColunasAtivas[Coluna], self))
-        #    self.ListaDeBotoes[Coluna].clicked.connect(self.ColunaSelecionada)
-        #    self.ListaDeBotoes[Coluna].setObjectName(self.ColunasAtivas[Coluna])
-        #    self.ListaDeBotoes[Coluna].setToolTip('Coluna %s do conjunto %s' % (self.ColunasAtivas[Coluna], self.DataFrameSelecionado))
-        #    self.ListaDeBotoes[Coluna].move(self.width*0.65-80,60+PoePraBaixo)
-        #    self.ListaDeBotoes[Coluna].resize(self.width*0.1,self.height*0.05)
-        #    self.ListaDeBotoes[Coluna].show()
-        #self.FlagParaPlotar = 0
-        #self.UpdatePlot(self, self.DataFrameAtivo[0], self.DataFrameAtivo[1])
-        #x = self.DataFrameAtivo[self.ColunasAtivas[0]].values
-        #y = self.DataFrameAtivo[self.ColunasAtivas[2]].values
-        #self.UpdatePlot(x,y)
-
+        self.checkComboBox()
+  
     def DefineEixo(self, QualEixo):
         sender = self.sender()
         if (sender.objectName()=='X'):
@@ -241,8 +221,6 @@ class App(QMainWindow):
             self.ListaDeBotoes[Coluna].setEnabled(False)
         self.ListaDataBase.setEnabled(False)
         self.LoadButton.setEnabled(False)
-
-
 
 if __name__ == '__main__':
     #Inicia a aplicação (janela), executa e sai
