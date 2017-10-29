@@ -153,10 +153,6 @@ class App(QMainWindow):
         self.DataBases=[]
         for l in self.tables.TABLE_NAME:
             self.DataBases.append(l)
-            if count < limit:
-                count += 1
-            else:
-                break
 
         self.df = []
         for l in self.DataBases:
