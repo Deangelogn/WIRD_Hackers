@@ -47,7 +47,33 @@ class PlotCanvas(FigureCanvas):
         self.axes.set_ylabel('Eixo Y')
         self.axes.set_xlabel('Eixo X')
         self.draw()
+        
+    def lineChart(self, df, X, Y, t):
+        self.axes.clear()
+        df.plot(ax = self.axes, kind="line", legend=False)
+        self.axes.set_title(t)
+        self.axes.set_ylabel(Y)
+        self.axes.set_xlabel(X)
+        self.draw()     
+            
+    def barChart(self, df, X, Y, t):
+        self.axes.clear()
+        df.plot(ax = self.axes, kind="bar", legend=False)
+        self.axes.set_title(t)
+        self.axes.set_ylabel(Y)
+        self.axes.set_xlabel(X)
+        self.draw() 
+        
+    def pieChart(self, df, X, Y, t):
+        self.axes.clear()
+        df['count'].plot(ax = self.axes, kind='pie', autopct='%.2f', legend=False)
+        self.axes.set_title(t)
+        self.axes.set_ylabel(Y)
+        self.axes.set_xlabel(X)
+        self.draw()       
 
+        
+        
 class App(QMainWindow):
 
     def __init__(self):
@@ -73,24 +99,14 @@ class App(QMainWindow):
         self.canvas = PlotCanvas(self, width=6.5, height=4.5)
         self.canvas.move(self.width*0.1,self.height*0.03)
 
-        #Cria botões x
-        EixoX = QPushButton('Eixo X', self)
-        EixoX.clicked.connect(self.DefineEixo)
-        EixoX.setObjectName('X')
-        EixoX.setToolTip('Definir como eixo X')
-        EixoX.move(self.width*0.4/2,self.height*0.62)
-        EixoX.resize(self.width*0.3,self.height*0.05)
-
-        #Cria botões y
-        EixoY = QPushButton('Eixo Y', self)
-        EixoY.clicked.connect(self.DefineEixo)
-        EixoY.setObjectName('Y')
-        EixoY.setToolTip('Definir como eixo Y')
-        EixoY.move(self.width*0.02,self.height*0.4/2)
-        EixoY.resize(self.width*0.03,self.height*0.6/2)
-
-        self.ListaDataBase = QComboBox(self)
-        
+        #Botão plot
+        plotButton =  QPushButton('Plot', self)
+        plotButton.clicked.connect(self.plot)
+        plotButton.setObjectName('plotButton')
+        plotButton.setToolTip('Plot')
+        plotButton.move(self.width*0.59,self.height*0.64)
+        plotButton.resize(self.width*0.1,self.height*0.05)
+            
         self.groupList = QComboBox(self)
         self.groupList.move(self.width*0.59,self.height*0.48)
         self.groupList.resize(self.width*0.1,self.height*0.05)
@@ -99,9 +115,18 @@ class App(QMainWindow):
         self.target.move(self.width*0.59,self.height*0.56)
         self.target.resize(self.width*0.1,self.height*0.05)
         
+        self.ListaDataBase = QComboBox(self)
         self.ListaDataBase.hide()
         self.ListaDataBase.move(self.width*0.59,self.height*0.1)
         self.ListaDataBase.resize(self.width*0.1,self.height*0.05)
+        
+        self.plotOptions = QComboBox(self)
+        self.plotOptions.move(self.width*0.01,self.height*0.1)
+        self.plotOptions.resize(self.width*0.08,self.height*0.05)
+        self.plotOptions.addItem("Bar")
+        self.plotOptions.addItem("Pie")
+        self.plotOptions.addItem("Line")
+        
         
         self.AdicionaItensLista()
         
@@ -109,9 +134,21 @@ class App(QMainWindow):
 
         self.PendenteParaPlot = None
 
-
-    def getDataBase(self):
+    def plot(self):
+        xLabel = self.groupList.currentText()
+        yLabel = self.target.currentText()
+        self.out = self.df[self.currentIndex].groupby(xLabel)[yLabel].agg(['count'])
         
+        self.chartType = self.plotOptions.currentText()
+        
+        if self.chartType == "Bar":
+            self.canvas.barChart(self.out, xLabel, yLabel, xLabel + ' vs ' + yLabel)
+        elif self.chartType == "Pie":
+            self.canvas.pieChart(self.out, xLabel, yLabel, xLabel + ' vs ' + yLabel)
+        elif self.chartType == "Line":
+            self.canvas.lineChart(self.out, xLabel, yLabel, xLabel + ' vs ' + yLabel)
+        
+    def getDataBase(self):
         conn = mysql.connector.connect(host='143.106.73.88', database='information_schema', user='htc', password='htc_123456')
         self.tables=pd.read_sql("SELECT * FROM tables where TABLE_TYPE='BASE TABLE'", con=conn)
         self.DataBases=[]
@@ -131,15 +168,6 @@ class App(QMainWindow):
             dataFrame = pd.read_sql("SELECT * FROM " + l, con=conn)
             self.df.append(dataFrame)
         conn.close()
-        
-        #Cria o menu dropdown
-        
-#    def LoadButtonClicked(self):
-#        sender = self.sender()
-#        self.ListaDataBase.show()
-#        self.Conexao = mysql.connector.connect(host='143.106.73.88', database='hackthecampus', user='htc', password='htc_123456')
-#        self.DataBases = ["htc_alunos_doutorado_naturalidade", "htc_alunos_especiais_inter_posgrad_naturalidade", "htc_alunos_especiais_inter_grad_naturalidade", "htc_alunos_graduacao_naturalidade", "htc_alunos_mestrado_naturalidade", "htc_concluintes", "htc_cv_cr", "htc_fapesp", "htc_folha_unicamp", "htc_lotacao_unicamp", "htc_origem_alunos", "htc_sexo_alunos", "htc_siafem_despesas"]
-#        self.AdicionaItensLista()
 
     def AdicionaItensLista(self):
         #Preenche a lista de itens
@@ -163,7 +191,8 @@ class App(QMainWindow):
                 
             
     def DataFrameSelecionado(self, text):
-        self.DataFrameAtivo = self.df[self.DataBases.index(text)]
+        self.currentIndex = self.DataBases.index(text)
+        self.DataFrameAtivo = self.df[self.currentIndex]
         self.ColunasAtivas = self.DataFrameAtivo.columns.values
         self.loadGroupComboBox()
         self.loadTargetComboBox()
