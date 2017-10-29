@@ -5,10 +5,15 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 
+import pandas as pd
+import numpy as np
+import re
+import os
+
 from PyQt5.QtWidgets import QApplication, QMainWindow, QMenu, QVBoxLayout, QSizePolicy, QMessageBox, QWidget, QPushButton, QComboBox, QDesktopWidget
 from PyQt5.QtGui import QIcon
 
-import mysql.connector, pandas
+import mysql.connector
 
 class PlotCanvas(FigureCanvas):
     #Define propriedades do canvas matplotlib, atualiza o gráfico, etc
@@ -46,16 +51,14 @@ class PlotCanvas(FigureCanvas):
 class App(QMainWindow):
 
     def __init__(self):
+        self.getDataBase()
         #Define propriedades da janela
         super().__init__()
         self.setWindowIcon(QIcon('imgs/logo_tu.png'))
-        #self.left = 50
-        #self.top = 50
-        self.title = 'PyQt5 matplotlib example - pythonspot.com'
-        #self.width = 640
-        #self.height = 400
+        self.title = 'WIRD'
         self.initUI()
-
+        print('1')
+        
     def initUI(self):
         #Define estrutura da janela, botoes, etc
         self.setWindowTitle(self.title)
@@ -69,13 +72,6 @@ class App(QMainWindow):
         #Cria a janela onde vai ser plotado
         self.canvas = PlotCanvas(self, width=6.5, height=4.5)
         self.canvas.move(self.width*0.1,self.height*0.03)
-
-        #Cria botão e conecta a função LoadButtonClicked quando clicado
-        self.LoadButton = QPushButton('Coletar Dados', self)
-        self.LoadButton.clicked.connect(self.LoadButtonClicked)
-        self.LoadButton.setToolTip('Coleta do banco de dados')
-        self.LoadButton.move(self.width*0.65-80,0)
-        self.LoadButton.resize(self.width*0.1,self.height*0.05)
 
         #Cria botões x
         EixoX = QPushButton('Eixo X', self)
@@ -93,23 +89,57 @@ class App(QMainWindow):
         EixoY.move(self.width*0.02,self.height*0.4/2)
         EixoY.resize(self.width*0.03,self.height*0.6/2)
 
-        #Cria o menu dropdown
         self.ListaDataBase = QComboBox(self)
+        
+        self.groupList = QComboBox(self)
+        self.groupList.move(self.width*0.59,self.height*0.48)
+        self.groupList.resize(self.width*0.1,self.height*0.05)
+        
+        self.target = QComboBox(self)
+        self.target.move(self.width*0.59,self.height*0.56)
+        self.target.resize(self.width*0.1,self.height*0.05)
+        
         self.ListaDataBase.hide()
-        self.ListaDataBase.move(self.width*0.65-80,60)
+        self.ListaDataBase.move(self.width*0.59,self.height*0.1)
         self.ListaDataBase.resize(self.width*0.1,self.height*0.05)
+        
+        self.AdicionaItensLista()
+        
         self.show()
 
         self.PendenteParaPlot = None
 
 
-
-    def LoadButtonClicked(self):
-        sender = self.sender()
-        self.ListaDataBase.show()
-        self.Conexao = mysql.connector.connect(host='143.106.73.88', database='hackthecampus', user='htc', password='htc_123456')
-        self.DataBases = ["htc_alunos_doutorado_naturalidade", "htc_alunos_especiais_inter_posgrad_naturalidade", "htc_alunos_especiais_inter_grad_naturalidade", "htc_alunos_graduacao_naturalidade", "htc_alunos_mestrado_naturalidade", "htc_concluintes", "htc_cv_cr", "htc_fapesp", "htc_folha_unicamp", "htc_lotacao_unicamp", "htc_origem_alunos", "htc_sexo_alunos", "htc_siafem_despesas"]
-        self.AdicionaItensLista()
+    def getDataBase(self):
+        
+        conn = mysql.connector.connect(host='143.106.73.88', database='information_schema', user='htc', password='htc_123456')
+        self.tables=pd.read_sql("SELECT * FROM tables where TABLE_TYPE='BASE TABLE'", con=conn)
+        self.DataBases=[]
+        limit = 2
+        count = 0
+        for l in self.tables.TABLE_NAME:
+            self.DataBases.append(l)
+            if count < limit:
+                count += 1
+            else:
+                break
+            
+        self.df = []
+        for l in self.DataBases:
+            print(l)
+            conn = mysql.connector.connect(host='143.106.73.88', database='hackthecampus', user='htc', password='htc_123456')
+            dataFrame = pd.read_sql("SELECT * FROM " + l, con=conn)
+            self.df.append(dataFrame)
+        conn.close()
+        
+        #Cria o menu dropdown
+        
+#    def LoadButtonClicked(self):
+#        sender = self.sender()
+#        self.ListaDataBase.show()
+#        self.Conexao = mysql.connector.connect(host='143.106.73.88', database='hackthecampus', user='htc', password='htc_123456')
+#        self.DataBases = ["htc_alunos_doutorado_naturalidade", "htc_alunos_especiais_inter_posgrad_naturalidade", "htc_alunos_especiais_inter_grad_naturalidade", "htc_alunos_graduacao_naturalidade", "htc_alunos_mestrado_naturalidade", "htc_concluintes", "htc_cv_cr", "htc_fapesp", "htc_folha_unicamp", "htc_lotacao_unicamp", "htc_origem_alunos", "htc_sexo_alunos", "htc_siafem_despesas"]
+#        self.AdicionaItensLista()
 
     def AdicionaItensLista(self):
         #Preenche a lista de itens
@@ -117,33 +147,45 @@ class App(QMainWindow):
             self.ListaDataBase.addItem(NomeDaBase)
         #Quando cada item da lista for selecionado, manda a string para a função DataFrameSelecionado
         self.ListaDataBase.activated[str].connect(self.DataFrameSelecionado)
+        self.ListaDataBase.show()
+        
+    def loadGroupComboBox(self):
+        for cn in self.ColunasAtivas:
+            self.groupList.addItem(cn)
+            
+    def loadTargetComboBox(self):
+        for cn in self.ColunasAtivas:
+            self.target.addItem(cn)        
 
-
+    def checkComboBox(self):
+            if self.groupList.currentText() == self.target.currentText():
+                self.target.setCurrentIndex(self.groupList.getCurrentIndex()+1)
+                
+            
     def DataFrameSelecionado(self, text):
-        #Prepara a query
-        s = "SELECT * FROM "
-        #Puxa o data frame
-        self.DataFrameAtivo = pandas.read_sql(s + text, con=self.Conexao)
+        self.DataFrameAtivo = self.df[self.DataBases.index(text)]
         self.ColunasAtivas = self.DataFrameAtivo.columns.values
-        self.ListaDeBotoes = []
-        PoePraBaixo = 0
-        for Coluna in range(0,len(self.ColunasAtivas)):
-            PoePraBaixo = PoePraBaixo + 40
-            self.ListaDeBotoes.append(QPushButton(self.ColunasAtivas[Coluna], self))
-            self.ListaDeBotoes[Coluna].clicked.connect(self.ColunaSelecionada)
-            self.ListaDeBotoes[Coluna].setObjectName(self.ColunasAtivas[Coluna])
-            self.ListaDeBotoes[Coluna].setToolTip('Coluna %s do conjunto %s' % (self.ColunasAtivas[Coluna], self.DataFrameSelecionado))
-            self.ListaDeBotoes[Coluna].move(self.width*0.65-80,60+PoePraBaixo)
-            self.ListaDeBotoes[Coluna].resize(self.width*0.1,self.height*0.05)
-            self.ListaDeBotoes[Coluna].show()
-        self.FlagParaPlotar = 0
+        self.loadGroupComboBox()
+        self.loadTargetComboBox()
+        #self.checkComboBox()
+        #self.ListaDeBotoes = []
+        #PoePraBaixo = 0
+        
+        
+        #for Coluna in range(0,len(self.ColunasAtivas)):
+        #    PoePraBaixo = PoePraBaixo + 40
+        #    self.ListaDeBotoes.append(QPushButton(self.ColunasAtivas[Coluna], self))
+        #    self.ListaDeBotoes[Coluna].clicked.connect(self.ColunaSelecionada)
+        #    self.ListaDeBotoes[Coluna].setObjectName(self.ColunasAtivas[Coluna])
+        #    self.ListaDeBotoes[Coluna].setToolTip('Coluna %s do conjunto %s' % (self.ColunasAtivas[Coluna], self.DataFrameSelecionado))
+        #    self.ListaDeBotoes[Coluna].move(self.width*0.65-80,60+PoePraBaixo)
+        #    self.ListaDeBotoes[Coluna].resize(self.width*0.1,self.height*0.05)
+        #    self.ListaDeBotoes[Coluna].show()
+        #self.FlagParaPlotar = 0
         #self.UpdatePlot(self, self.DataFrameAtivo[0], self.DataFrameAtivo[1])
         #x = self.DataFrameAtivo[self.ColunasAtivas[0]].values
         #y = self.DataFrameAtivo[self.ColunasAtivas[2]].values
         #self.UpdatePlot(x,y)
-
-
-
 
     def DefineEixo(self, QualEixo):
         sender = self.sender()
@@ -162,7 +204,6 @@ class App(QMainWindow):
         for Coluna in range(0,len(self.ColunasAtivas)):
             self.ListaDeBotoes[Coluna].setEnabled(True)
         self.PendenteParaPlot = None
-
 
     def ColunaSelecionada(self):
         sender = self.sender()
