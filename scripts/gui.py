@@ -58,7 +58,7 @@ class App(QMainWindow):
         self.title = 'WIRD'
         self.initUI()
         print('1')
-        
+
     def initUI(self):
         #Define estrutura da janela, botoes, etc
         self.setWindowTitle(self.title)
@@ -90,28 +90,28 @@ class App(QMainWindow):
         EixoY.resize(self.width*0.03,self.height*0.6/2)
 
         self.ListaDataBase = QComboBox(self)
-        
+
         self.groupList = QComboBox(self)
         self.groupList.move(self.width*0.59,self.height*0.48)
         self.groupList.resize(self.width*0.1,self.height*0.05)
-        
+
         self.target = QComboBox(self)
         self.target.move(self.width*0.59,self.height*0.56)
         self.target.resize(self.width*0.1,self.height*0.05)
-        
+
         self.ListaDataBase.hide()
         self.ListaDataBase.move(self.width*0.59,self.height*0.1)
         self.ListaDataBase.resize(self.width*0.1,self.height*0.05)
-        
+
         self.AdicionaItensLista()
-        
+
         self.show()
 
         self.PendenteParaPlot = None
 
 
     def getDataBase(self):
-        
+
         conn = mysql.connector.connect(host='143.106.73.88', database='information_schema', user='htc', password='htc_123456')
         self.tables=pd.read_sql("SELECT * FROM tables where TABLE_TYPE='BASE TABLE'", con=conn)
         self.DataBases=[]
@@ -123,7 +123,7 @@ class App(QMainWindow):
                 count += 1
             else:
                 break
-            
+
         self.df = []
         for l in self.DataBases:
             print(l)
@@ -131,9 +131,9 @@ class App(QMainWindow):
             dataFrame = pd.read_sql("SELECT * FROM " + l, con=conn)
             self.df.append(dataFrame)
         conn.close()
-        
+
         #Cria o menu dropdown
-        
+
 #    def LoadButtonClicked(self):
 #        sender = self.sender()
 #        self.ListaDataBase.show()
@@ -148,30 +148,30 @@ class App(QMainWindow):
         #Quando cada item da lista for selecionado, manda a string para a função DataFrameSelecionado
         self.ListaDataBase.activated[str].connect(self.DataFrameSelecionado)
         self.ListaDataBase.show()
-        
+
     def loadGroupComboBox(self):
         for cn in self.ColunasAtivas:
             self.groupList.addItem(cn)
-            
+
     def loadTargetComboBox(self):
         for cn in self.ColunasAtivas:
-            self.target.addItem(cn)        
+            self.target.addItem(cn)
 
     def checkComboBox(self):
             if self.groupList.currentText() == self.target.currentText():
-                self.target.setCurrentIndex(self.groupList.getCurrentIndex()+1)
-                
-            
+                self.target.setCurrentText(self.target.itemText(self.groupList.currentIndex()+1))
+
+
     def DataFrameSelecionado(self, text):
         self.DataFrameAtivo = self.df[self.DataBases.index(text)]
         self.ColunasAtivas = self.DataFrameAtivo.columns.values
         self.loadGroupComboBox()
         self.loadTargetComboBox()
-        #self.checkComboBox()
+        self.checkComboBox()
         #self.ListaDeBotoes = []
         #PoePraBaixo = 0
-        
-        
+
+
         #for Coluna in range(0,len(self.ColunasAtivas)):
         #    PoePraBaixo = PoePraBaixo + 40
         #    self.ListaDeBotoes.append(QPushButton(self.ColunasAtivas[Coluna], self))
