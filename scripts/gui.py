@@ -151,8 +151,6 @@ class App(QMainWindow):
         conn = mysql.connector.connect(host='143.106.73.88', database='information_schema', user='htc', password='htc_123456')
         self.tables=pd.read_sql("SELECT * FROM tables where TABLE_TYPE='BASE TABLE'", con=conn)
         self.DataBases=[]
-        limit = 2
-        count = 0
         for l in self.tables.TABLE_NAME:
             self.DataBases.append(l)
             if count < limit:
