@@ -156,7 +156,7 @@ class App(QMainWindow):
 
         self.df = []
         for l in self.DataBases:
-            print(l)
+            print("loading",l)
             conn = mysql.connector.connect(host='143.106.73.88', database='hackthecampus', user='htc', password='htc_123456')
             dataFrame = pd.read_sql("SELECT * FROM " + l, con=conn)
             self.df.append(dataFrame)
